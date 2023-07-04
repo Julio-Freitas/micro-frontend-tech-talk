@@ -5,29 +5,23 @@ import {
   constructLayoutEngine,
 } from "single-spa-layout";
 
-import microfrontendLayout from "./microfrontend-layout.html";
+import microfrontendLayoutDefault from "../public/template/default-layout.html";
 
-function getTemplate(template){
-  console.log("template",template);
-  if(!template){
-    customStart(microfrontendLayout)
+async function getTemplate(template) {
+  try {
+    if (!template) throw new Error("template not exist!");
+    const respose = await fetch(`/template/${template}-layout.html`);
+    const responseText = await respose.text();
+    customStart(responseText);
+  } catch (error) {
+    customStart(microfrontendLayoutDefault);
   }
-  else {
-    fetch(`/template/${template}-layout.html`).then((res) => res.text()).then((res) => {
-      console.log(res);
-      customStart(res)
-      return res;
-    }).catch((err) => {
-      // LOAD DEFAULT TEMPLATE
-      customStart(microfrontendLayout)
-      console.log(err);
-      return null;
-    })
-  }
-  
+  return {
+    start,
+  };
 }
 
-function customStart(layoutHtml){
+function customStart(layoutHtml) {
   const routes = constructRoutes(layoutHtml);
   const applications = constructApplications({
     routes,
@@ -39,11 +33,8 @@ function customStart(layoutHtml){
 
   applications.forEach(registerApplication);
   layoutEngine.activate();
-  start();
 }
 
-const template = localStorage.getItem('template')
+const template = localStorage.getItem("template");
 
-getTemplate(template)
-
-
+getTemplate(template).then((res) => res.start());
